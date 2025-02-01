@@ -357,17 +357,21 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   hoverHeight: 3
-  positionAdjustmentSpeed: 5
-  raycastDistance: 10
-  terrainLayer:
+  raycastDistance: 20
+  smoothTerrainLayer:
     serializedVersion: 2
-    m_Bits: 4294967295
-  movementSpeed: 120
-  acceleration: 3
+    m_Bits: 256
+  bumpyTerrainLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  smoothPositionAdjustmentSpeed: 50
+  bumpyPositionAdjustmentSpeed: 10
+  movementSpeed: 100
+  acceleration: 2
   deceleration: 2
   rotationSpeed: 125
   timeBeforeReset: 3
-  trackRaycastDistance: 10
+  trackRaycastDistance: 20
   trackTag: Track
 --- !u!114 &7105996084223619230
 MonoBehaviour:

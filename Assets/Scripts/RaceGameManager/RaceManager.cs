@@ -32,6 +32,9 @@ public class RaceManager : MonoBehaviour
 
     private RacerProgress playerProgress;
 
+    private string[] placeMapping = { "1st", "2nd", "3rd"};
+
+
     void Awake()
     {
         if (Instance == null)
@@ -91,7 +94,11 @@ public class RaceManager : MonoBehaviour
     /// </summary>
     private void UpdatePositionUI(int position)
     {
-        playerPositionText.text = position + "/" + racers.Count;
+        if (position < 4) {
+            playerPositionText.text = placeMapping[position-1];
+        } else {
+            playerPositionText.text = position + "th";
+        }
     }
 
     /// <summary>

@@ -4,9 +4,18 @@ public class StableHovercarController : BaseHovercarController
 {
     [Header("Hover Settings")]
     public float hoverHeight = 3.0f;
-    public float positionAdjustmentSpeed = 10.0f;
     public float raycastDistance = 10.0f;
-    public LayerMask terrainLayer;
+    
+    [Tooltip("Layer mask for smooth terrain.")]
+    public LayerMask smoothTerrainLayer;
+    [Tooltip("Layer mask for bumpy terrain.")]
+    public LayerMask bumpyTerrainLayer;
+
+    [Header("Position Adjustment Speeds")]
+    [Tooltip("Adjustment speed when hovering over smooth terrain.")]
+    public float smoothPositionAdjustmentSpeed = 10.0f;
+    [Tooltip("Adjustment speed when hovering over bumpy terrain.")]
+    public float bumpyPositionAdjustmentSpeed = 5.0f;
 
     [Header("Movement Settings")]
     public float movementSpeed = 10.0f;  // Max speed
@@ -28,7 +37,7 @@ public class StableHovercarController : BaseHovercarController
     private Rigidbody rb;
     private RacerProgress racerProgress;
 
-    // Timer for how long the raycast has failed to hit ground/track
+    // Timer for how long the raycast has failed to hit ground/track.
     private float noContactTimer = 0.0f;
     // Flag that indicates whether a raycast hit was detected in this physics update.
     private bool groundContact = false;
@@ -72,8 +81,11 @@ public class StableHovercarController : BaseHovercarController
         RaycastHit hit;
         Vector3 rayOrigin = transform.position;
 
-        // Cast a ray downward to detect the terrain (or track geometry).
-        if (Physics.Raycast(rayOrigin, -transform.up, out hit, raycastDistance, terrainLayer))
+        // Combine both terrain layers for the raycast.
+        LayerMask combinedLayer = smoothTerrainLayer | bumpyTerrainLayer;
+
+        // Cast a ray downward to detect the terrain.
+        if (Physics.Raycast(rayOrigin, -transform.up, out hit, raycastDistance, combinedLayer))
         {
             // We have ground contact.
             groundContact = true;
@@ -102,14 +114,20 @@ public class StableHovercarController : BaseHovercarController
             Vector3 worldNormal1 = hit.collider.transform.TransformDirection(localNormal1);
             Vector3 worldNormal2 = hit.collider.transform.TransformDirection(localNormal2);
             Vector3 worldNormal3 = hit.collider.transform.TransformDirection(localNormal3);
-            Vector3 interpolatedNormal = worldNormal1 * hit.barycentricCoordinate.x +
+            Vector3 interpolatedNormal = (worldNormal1 * hit.barycentricCoordinate.x +
                                          worldNormal2 * hit.barycentricCoordinate.y +
-                                         worldNormal3 * hit.barycentricCoordinate.z;
-            interpolatedNormal.Normalize();
+                                         worldNormal3 * hit.barycentricCoordinate.z).normalized;
+
+            // Choose the appropriate adjustment speed based on which terrain layer was hit.
+            float currentAdjustmentSpeed = smoothPositionAdjustmentSpeed;
+            if (IsInLayerMask(hit.collider.gameObject, bumpyTerrainLayer))
+            {
+                currentAdjustmentSpeed = bumpyPositionAdjustmentSpeed;
+            }
 
             // Compute the target hover position.
             Vector3 targetPosition = interpolatedPoint + interpolatedNormal * hoverHeight;
-            rb.MovePosition(Vector3.Lerp(transform.position, targetPosition, Time.fixedDeltaTime * positionAdjustmentSpeed));
+            rb.MovePosition(Vector3.Lerp(transform.position, targetPosition, Time.fixedDeltaTime * currentAdjustmentSpeed));
 
             // Smoothly rotate the vehicle to align with the terrain.
             Quaternion targetRotation = Quaternion.FromToRotation(transform.up, interpolatedNormal) * transform.rotation;
@@ -148,87 +166,72 @@ public class StableHovercarController : BaseHovercarController
         rb.angularVelocity = transform.up * turn * Mathf.Deg2Rad;
     }
 
-    /// <summary>
-    /// Resets the vehicle’s position to the last checkpoint reached (from RacerProgress) and orients it so that:
-    /// - Its front faces the nearest (other) checkpoint.
-    /// - Its bottom is aligned to the track (using a raycast and the specified track tag).
-    /// </summary>
-    void ResetToCheckpoint()
+void ResetToCheckpoint()
+{
+    // Ensure checkpoints and progress tracking are valid.
+    if (checkpoints == null || checkpoints.Length == 0)
     {
-        // Make sure we have checkpoints.
-        if (checkpoints == null || checkpoints.Length == 0)
+        Debug.LogWarning("No checkpoints have been assigned in the Inspector.");
+        return;
+    }
+    if (racerProgress == null)
+    {
+        Debug.LogWarning("RacerProgress component is missing. Cannot reset to checkpoint.");
+        return;
+    }
+    
+    int cpIndex = racerProgress.currentCheckpointIndex;
+    if (cpIndex < 0 || cpIndex >= checkpoints.Length)
+    {
+        Debug.LogWarning("Invalid checkpoint index in RacerProgress!");
+        return;
+    }
+
+    // Get the last checkpoint.
+    Transform lastCheckpoint = checkpoints[cpIndex];
+
+    // Determine the next checkpoint in sequence.
+    int nextCheckpointIndex = (cpIndex + 1) % checkpoints.Length;
+    Transform nextCheckpoint = checkpoints[nextCheckpointIndex];
+
+    // Determine desired forward direction toward the next checkpoint.
+    Vector3 desiredForward = (nextCheckpoint.position - lastCheckpoint.position).normalized;
+
+    // Determine the track’s surface normal using a raycast.
+    Vector3 desiredUp = Vector3.up;  // Fallback if no track surface is detected.
+    RaycastHit hit;
+    Vector3 rayOrigin = lastCheckpoint.position + Vector3.up * 1.0f;
+    if (Physics.Raycast(rayOrigin, -Vector3.up, out hit, trackRaycastDistance))
+    {
+        if (hit.collider.CompareTag(trackTag))
         {
-            Debug.LogWarning("No checkpoints have been assigned in the Inspector.");
-            return;
+            desiredUp = -hit.normal;
         }
-        if (racerProgress == null)
-        {
-            Debug.LogWarning("RacerProgress component is missing. Cannot reset to checkpoint.");
-            return;
-        }
-        int cpIndex = racerProgress.currentCheckpointIndex;
-        if (cpIndex < 0 || cpIndex >= checkpoints.Length)
-        {
-            Debug.LogWarning("Invalid checkpoint index in RacerProgress!");
-            return;
-        }
+    }
 
-        // Position: use the checkpoint that the racer last reached.
-        Transform lastCheckpoint = checkpoints[cpIndex];
+    // Adjust the forward vector to be perpendicular to the track's surface.
+    desiredForward = Vector3.ProjectOnPlane(desiredForward, desiredUp).normalized;
 
-        // Find the "other" checkpoint nearest to the last checkpoint.
-        // (This will be used to determine the forward direction.)
-        Transform nearestOther = null;
-        float nearestDistance = Mathf.Infinity;
-        foreach (Transform cp in checkpoints)
-        {
-            if (cp == lastCheckpoint)
-                continue;
-            float d = Vector3.Distance(lastCheckpoint.position, cp.position);
-            if (d < nearestDistance)
-            {
-                nearestDistance = d;
-                nearestOther = cp;
-            }
-        }
+    // Build the final rotation.
+    Quaternion desiredRotation = Quaternion.LookRotation(desiredForward, desiredUp);
 
-        // Determine desired forward:
-        // If we found another checkpoint, aim toward it.
-        // (Project the vector onto the plane defined by the desired up.)
-        Vector3 desiredForward = (nearestOther != null)
-            ? (nearestOther.position - lastCheckpoint.position).normalized
-            : transform.forward;
+    // Reset position and orientation.
+    transform.position = lastCheckpoint.position;
+    transform.rotation = desiredRotation;
 
-        // Determine the track’s surface normal so we can align the vehicle’s bottom.
-        // We cast a ray downward from a point just above the checkpoint.
-        Vector3 desiredUp = Vector3.up; // Fallback if no track is detected.
-        RaycastHit hit;
-        Vector3 rayOrigin = lastCheckpoint.position + Vector3.up * 1.0f;
-        if (Physics.Raycast(rayOrigin, -Vector3.up, out hit, trackRaycastDistance))
-        {
-            if (hit.collider.CompareTag(trackTag))
-            {
-                // To have the vehicle’s bottom (–transform.up) flush with the track,
-                // we set our desired up vector to be the inverse of the track’s normal.
-                desiredUp = -hit.normal;
-            }
-        }
+    // Clear any existing velocity.
+    currentSpeed = 0f;
+    rb.linearVelocity = Vector3.zero;
+    rb.angularVelocity = Vector3.zero;
 
-        // Now adjust the desired forward so that it is perpendicular to the desired up.
-        desiredForward = Vector3.ProjectOnPlane(desiredForward, desiredUp).normalized;
+    Debug.Log("Vehicle reset to checkpoint: " + lastCheckpoint.name +
+              " with front facing: " + nextCheckpoint.name);
+}
 
-        // Build the final rotation.
-        Quaternion desiredRotation = Quaternion.LookRotation(desiredForward, desiredUp);
 
-        // Reset position and orientation.
-        transform.position = lastCheckpoint.position;
-        transform.rotation = desiredRotation;
-
-        // Clear any existing motion.
-        rb.linearVelocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-
-        Debug.Log("Vehicle reset to checkpoint: " + lastCheckpoint.name +
-                  (nearestOther != null ? " with front facing: " + nearestOther.name : ""));
+    // Helper method to determine if a GameObject's layer is in a given LayerMask.
+    private bool IsInLayerMask(GameObject obj, LayerMask mask)
+    {
+        return ((mask.value & (1 << obj.layer)) != 0);
     }
 }

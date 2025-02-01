@@ -344,9 +344,14 @@ MonoBehaviour:
   hoverHeight: 3
   positionAdjustmentSpeed: 10
   raycastDistance: 20
-  terrainLayer:
+  smoothTerrainLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 256
+  bumpyTerrainLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  smoothPositionAdjustmentSpeed: 50
+  bumpyPositionAdjustmentSpeed: 10
   movementSpeed: 100
   acceleration: 2
   deceleration: 2
