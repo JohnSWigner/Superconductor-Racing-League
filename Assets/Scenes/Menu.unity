@@ -1232,7 +1232,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39e00ff0228389448a3e4fa61b925b10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scene_to_load: TestTrack
+  scene_to_load: AITrack
   controlsPanel: {fileID: 1583355326}
 --- !u!1 &1397774624
 GameObject:

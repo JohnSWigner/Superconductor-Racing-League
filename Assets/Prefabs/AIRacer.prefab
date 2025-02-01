@@ -95,7 +95,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 713388573115023667}
-  - component: {fileID: 6552287091957501518}
   m_Layer: 0
   m_Name: BankingObject
   m_TagString: Untagged
@@ -119,20 +118,6 @@ Transform:
   - {fileID: 403226101183159382}
   m_Father: {fileID: 2739604471974086380}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6552287091957501518
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6468720760632047264}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f060abec37829be48a8165282e7c3aeb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bankingSpeed: 5
-  maxBankingAngle: 30
 --- !u!1 &9007727309090789879
 GameObject:
   m_ObjectHideFlags: 0
@@ -144,10 +129,10 @@ GameObject:
   - component: {fileID: 2739604471974086380}
   - component: {fileID: 7162886650759621711}
   - component: {fileID: 6800183193855919764}
-  - component: {fileID: 341120459158792421}
-  - component: {fileID: 7105996084223619230}
+  - component: {fileID: 4631925233965777590}
+  - component: {fileID: 8696968540172343143}
   m_Layer: 0
-  m_Name: Player
+  m_Name: AIRacer
   m_TagString: Racer
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -217,7 +202,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2, y: 0.75, z: 2.4}
   m_Center: {x: 0, y: -0.1, z: -0.9}
---- !u!114 &341120459158792421
+--- !u!114 &4631925233965777590
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -226,7 +211,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 9007727309090789879}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a58d34a4aed97c74b9dc8d93fe5594bf, type: 3}
+  m_Script: {fileID: 11500000, guid: c250747ddb036f14faf25789ceb28a34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hoverHeight: 3
@@ -234,12 +219,18 @@ MonoBehaviour:
   raycastDistance: 10
   terrainLayer:
     serializedVersion: 2
-    m_Bits: 4294967295
-  movementSpeed: 120
-  acceleration: 3
-  deceleration: 2
-  rotationSpeed: 125
---- !u!114 &7105996084223619230
+    m_Bits: 0
+  movementSpeed: 50
+  acceleration: 5
+  deceleration: 7
+  rotationSpeed: 100
+  waypoints: []
+  waypointThreshold: 5
+  enableRubberBanding: 1
+  rubberBandingCoefficient: 0.1
+  maxSpeedMultiplier: 1.5
+  minSpeedMultiplier: 0.8
+--- !u!114 &8696968540172343143
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
