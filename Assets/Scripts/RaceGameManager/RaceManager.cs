@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;  // Import TextMeshPro namespace
 using System.Collections.Generic;
+using Unity.Cinemachine;  // Make sure you have the Cinemachine package installed
 
 public class RaceManager : MonoBehaviour
 {
@@ -26,14 +27,24 @@ public class RaceManager : MonoBehaviour
     [Tooltip("Reference to the player's vehicle.")]
     public GameObject playerVehicle;
 
+    [Header("Post-Race Settings")]
+    [Tooltip("Assign the Cinemachine virtual camera.")]
+    public CinemachineCamera victoryCamera;
+    [Tooltip("Assign the Cinemachine player camera.")]
+    public CinemachineCamera playerCamera;
+    
+    [Tooltip("Canvas displayed after the race finishes.")]
+    public GameObject postRaceCanvas;
+
+    [Tooltip("Canvas displayed after the race finishes.")]
+    public GameObject playerUI;
+
     private List<RacerProgress> racers = new List<RacerProgress>();
     public bool raceFinished = false;
     public string winnerName = "";
 
     private RacerProgress playerProgress;
-
-    private string[] placeMapping = { "1st", "2nd", "3rd"};
-
+    private string[] placeMapping = { "1st", "2nd", "3rd" };
 
     void Awake()
     {
@@ -55,18 +66,22 @@ public class RaceManager : MonoBehaviour
             }
         }
 
-        if (playerVehicle != null) {
+        if (playerVehicle != null) 
+        {
             playerProgress = playerVehicle.GetComponent<RacerProgress>();
         }
 
         // Initialize UI
         if (playerProgress != null)
             UpdateLapsLeftUI();
+
+        if (postRaceCanvas != null)
+            postRaceCanvas.SetActive(false);  // Make sure the post-race canvas is initially hidden
     }
 
     void Update()
     {
-        if (playerProgress != null)
+        if (playerProgress != null && !raceFinished)
         {
             int playerPosition = GetPlayerPosition();
             UpdatePositionUI(playerPosition);
@@ -94,9 +109,12 @@ public class RaceManager : MonoBehaviour
     /// </summary>
     private void UpdatePositionUI(int position)
     {
-        if (position < 4) {
-            playerPositionText.text = placeMapping[position-1];
-        } else {
+        if (position < 4) 
+        {
+            playerPositionText.text = placeMapping[position - 1];
+        } 
+        else 
+        {
             playerPositionText.text = position + "th";
         }
     }
@@ -125,6 +143,53 @@ public class RaceManager : MonoBehaviour
             raceFinished = true;
             winnerName = rp.gameObject.name;
             Debug.Log("Race Finished! Winner: " + winnerName);
+
+            // Trigger post-race events
+            TriggerPostRaceEvents();
+        }
+    }
+
+    /// <summary>
+    /// Handles post-race actions like freezing time, updating the camera, and displaying the UI.
+    /// </summary>
+    private void TriggerPostRaceEvents()
+    {
+
+        // Move the Cinemachine camera to the front of the player's vehicle
+        if (victoryCamera != null && playerVehicle != null && playerCamera != null)
+        {
+            victoryCamera.gameObject.SetActive(true);
+            playerCamera.gameObject.SetActive(false);
+        }
+
+        // Show the post-race canvas
+        if (postRaceCanvas != null)
+        {
+            postRaceCanvas.SetActive(true);
+        }
+
+                // Show the post-race canvas
+        if ( playerUI != null)
+        {
+            playerUI.SetActive(false);
+        }
+
+        foreach (RacerProgress racer in racers)
+        {
+            Rigidbody rb = racer.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;  // Stop any current motion
+                rb.angularVelocity = Vector3.zero;  // Stop any rotation
+                rb.constraints = RigidbodyConstraints.FreezePosition | RigidbodyConstraints.FreezeRotation;
+            }
+            Rigidbody childRb = racer.GetComponentInChildren<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;  // Stop any current motion
+                rb.angularVelocity = Vector3.zero;  // Stop any rotation
+                rb.constraints = RigidbodyConstraints.FreezePosition | RigidbodyConstraints.FreezeRotation;
+            }
         }
     }
 }

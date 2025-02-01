@@ -9,21 +9,25 @@ public class ObjectBanking : MonoBehaviour
     [Tooltip("The maximum angle the object can bank to either side.")]
     public float maxBankingAngle = 30f;
 
+    public RaceManager raceManager;
+
     // Internal variable to keep track of current bank angle
     private float currentBankAngle = 0f;
 
     void Update()
     {
-        // Get input from Horizontal axis (e.g., keyboard or controller)
-        float horizontalInput = Input.GetAxis("Horizontal");
+        if (!raceManager.raceFinished) {
+            // Get input from Horizontal axis (e.g., keyboard or controller)
+            float horizontalInput = Input.GetAxis("Horizontal");
 
-        // Target angle is proportional to input and max banking angle
-        float targetBankAngle = horizontalInput * maxBankingAngle;
+            // Target angle is proportional to input and max banking angle
+            float targetBankAngle = horizontalInput * maxBankingAngle;
 
-        // Smoothly interpolate current angle towards the target
-        currentBankAngle = Mathf.Lerp(currentBankAngle, targetBankAngle, Time.deltaTime * bankingSpeed);
+            // Smoothly interpolate current angle towards the target
+            currentBankAngle = Mathf.Lerp(currentBankAngle, targetBankAngle, Time.deltaTime * bankingSpeed);
 
-        // Apply the rotation (banking along the Z-axis)
-        transform.localRotation = Quaternion.Euler(0f, 0f, -currentBankAngle);
+            // Apply the rotation (banking along the Z-axis)
+            transform.localRotation = Quaternion.Euler(0f, 0f, -currentBankAngle);
+        }
     }
 }
