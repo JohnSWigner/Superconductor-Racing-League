@@ -3,7 +3,12 @@ guid: 74528d080fbabce408b47c69abbe314a
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Track_Circuit_01
+    second: {fileID: 2100000, guid: 7c3461cc9c2347341b348b22ce1f7ad6, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
