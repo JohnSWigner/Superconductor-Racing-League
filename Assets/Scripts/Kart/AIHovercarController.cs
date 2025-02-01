@@ -259,6 +259,9 @@ public class AIHovercarController : BaseHovercarController
 
         // Apply movement: accelerate/decelerate toward the target speed, then update velocity and angular velocity.
         float targetSpeed = verticalInput * movementSpeed;
+        if (!canAccelerate) {
+            targetSpeed = 0;
+        }
         if (verticalInput != 0)
         {
             currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, Time.fixedDeltaTime * acceleration);

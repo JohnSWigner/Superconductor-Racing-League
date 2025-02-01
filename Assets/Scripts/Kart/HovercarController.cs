@@ -144,6 +144,9 @@ public class StableHovercarController : BaseHovercarController
     {
         // Get player input.
         float input = Input.GetAxis("Vertical");
+        if (!canAccelerate) {
+            input = 0;
+        }
 
         // Calculate target speed.
         float targetSpeed = input * movementSpeed;
