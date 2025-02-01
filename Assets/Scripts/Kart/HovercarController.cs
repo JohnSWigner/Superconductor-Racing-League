@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class StableHovercarController : MonoBehaviour
+public class StableHovercarController : BaseHovercarController
 {
     [Header("Hover Settings")]
     public float hoverHeight = 3.0f;
@@ -17,8 +17,6 @@ public class StableHovercarController : MonoBehaviour
     [Header("Reset Settings")]
     [Tooltip("Time (in seconds) without track contact before resetting the vehicle.")]
     public float timeBeforeReset = 3.0f;
-    // Checkpoints are used to reposition the vehicle.
-    public Transform[] checkpoints;
 
     [Header("Track Orientation Settings")]
     [Tooltip("Distance to search downward for track (used to align the vehicle’s bottom).")]

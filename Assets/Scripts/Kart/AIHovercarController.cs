@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class AIHovercarController : MonoBehaviour
+public class AIHovercarController : BaseHovercarController
 {
     [Header("Hover Settings")]
     public float hoverHeight = 3.0f;
@@ -15,8 +15,6 @@ public class AIHovercarController : MonoBehaviour
     public float rotationSpeed = 100.0f;
 
     [Header("Checkpoint Navigation")]
-    [Tooltip("Ordered list of checkpoints for the AI to follow.")]
-    public Transform[] checkpoints;
     [Tooltip("Distance from a checkpoint at which the AI switches to the next one.")]
     public float checkpointThreshold = 5.0f;
     private int currentCheckpointIndex = 0;
