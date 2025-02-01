@@ -109,7 +109,7 @@ public class StableHovercarController : BaseHovercarController
 
             // Compute the target hover position.
             Vector3 targetPosition = interpolatedPoint + interpolatedNormal * hoverHeight;
-            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.fixedDeltaTime * positionAdjustmentSpeed);
+            rb.MovePosition(Vector3.Lerp(transform.position, targetPosition, Time.fixedDeltaTime * positionAdjustmentSpeed));
 
             // Smoothly rotate the vehicle to align with the terrain.
             Quaternion targetRotation = Quaternion.FromToRotation(transform.up, interpolatedNormal) * transform.rotation;
