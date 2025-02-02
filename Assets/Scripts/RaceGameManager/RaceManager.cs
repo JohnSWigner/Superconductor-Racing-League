@@ -31,6 +31,7 @@ public class RaceManager : MonoBehaviour
     public CinemachineCamera victoryCamera;
     public CinemachineCamera playerCamera;
     public GameObject postRaceCanvas;
+    public TextMeshProUGUI victoryText;
     public GameObject playerUI;
 
     private List<RacerProgress> racers = new List<RacerProgress>();
@@ -108,6 +109,12 @@ public class RaceManager : MonoBehaviour
     {
         foreach (RacerProgress racer in racers)
         {
+            BaseHovercarController controller = racer.GetComponent<BaseHovercarController>();
+            if (controller != null)
+            {
+                controller.enabled = false; // Disable the movement script.
+            }
+
             Rigidbody rb = racer.GetComponent<Rigidbody>();
             if (rb != null)
             {
@@ -122,6 +129,12 @@ public class RaceManager : MonoBehaviour
     {
         foreach (RacerProgress racer in racers)
         {
+            BaseHovercarController controller = racer.GetComponent<BaseHovercarController>();
+            if (controller != null)
+            {
+                controller.enabled = true; // Disable the movement script.
+            }
+
             racer.GetComponent<BaseHovercarController>().canAccelerate = true;
             Rigidbody rb = racer.GetComponent<Rigidbody>();
             if (rb != null)
@@ -144,13 +157,18 @@ public class RaceManager : MonoBehaviour
 
     private void UpdatePositionUI(int position)
     {
+        playerPositionText.text = GetPrettyPosition(position);
+    }
+
+    private string GetPrettyPosition(int position)
+    {
         if (position < 4) 
         {
-            playerPositionText.text = placeMapping[position - 1];
+            return placeMapping[position - 1];
         } 
         else 
         {
-            playerPositionText.text = position + "th";
+            return position + "th";
         }
     }
 
@@ -178,15 +196,25 @@ public class RaceManager : MonoBehaviour
 
     private void TriggerPostRaceEvents()
     {
+        LockRacers();
         if (victoryCamera != null && playerVehicle != null && playerCamera != null)
         {
             victoryCamera.gameObject.SetActive(true);
             playerCamera.gameObject.SetActive(false);
         }
 
-        if (postRaceCanvas != null) postRaceCanvas.SetActive(true);
+        if (postRaceCanvas != null) 
+        {
+            int playerPosition = GetPlayerPosition();
+            postRaceCanvas.SetActive(true);
+            if (playerPosition == 1) {
+                victoryText.text = "You win";
+            }
+            else 
+            {
+                victoryText.text = "you placed " + GetPrettyPosition(playerPosition);
+            }
+        }
         if (playerUI != null) playerUI.SetActive(false);
-
-        LockRacers();  // Lock racers at the end of the race
     }
 }
