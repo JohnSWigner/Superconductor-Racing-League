@@ -286,7 +286,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18ac36268412d1946a31d8945cc6ac33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  totalLaps: 1
+  totalLaps: 2
   numberOfCheckpoints: 126
   preliminaryCounts: 3
   delayBetweenCounts: 1
@@ -300,6 +300,7 @@ MonoBehaviour:
   victoryCamera: {fileID: 0}
   playerCamera: {fileID: 0}
   postRaceCanvas: {fileID: 987833168164348023}
+  victoryText: {fileID: 0}
   playerUI: {fileID: 0}
   raceFinished: 0
   raceStarted: 0
