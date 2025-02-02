@@ -1,13 +1,22 @@
 using UnityEngine;
 
-public class AIHovercarController : MonoBehaviour
+public class AIHovercarController : BaseHovercarController
 {
     [Header("Hover Settings")]
     public float hoverHeight = 3.0f;
     public float positionAdjustmentSpeed = 10.0f;
     public float raycastDistance = 10.0f;
-    public LayerMask terrainLayer;
+    
+    [Tooltip("Layer mask for smooth terrain.")]
+    public LayerMask smoothTerrainLayer;
+    [Tooltip("Layer mask for bumpy terrain.")]
+    public LayerMask bumpyTerrainLayer;
 
+    [Header("Position Adjustment Speeds")]
+    [Tooltip("Adjustment speed when hovering over smooth terrain.")]
+    public float smoothPositionAdjustmentSpeed = 10.0f;
+    [Tooltip("Adjustment speed when hovering over bumpy terrain.")]
+    public float bumpyPositionAdjustmentSpeed = 5.0f;
     [Header("Movement Settings")]
     public float movementSpeed = 10.0f;  // Max speed
     public float acceleration = 5.0f;    // How quickly to accelerate
@@ -15,8 +24,6 @@ public class AIHovercarController : MonoBehaviour
     public float rotationSpeed = 100.0f;
 
     [Header("Checkpoint Navigation")]
-    [Tooltip("Ordered list of checkpoints for the AI to follow.")]
-    public Transform[] checkpoints;
     [Tooltip("Distance from a checkpoint at which the AI switches to the next one.")]
     public float checkpointThreshold = 5.0f;
     private int currentCheckpointIndex = 0;
@@ -55,6 +62,7 @@ public class AIHovercarController : MonoBehaviour
 
     private float currentSpeed = 0.0f;
     private Rigidbody rb;
+    private RacerProgress racerProgress;
 
     // Timer for lost ground/track contact
     private float noContactTimer = 0.0f;
@@ -64,7 +72,13 @@ public class AIHovercarController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.useGravity = false;
+        rb.useGravity = false;// Disable gravity for hover stability
+
+        racerProgress = GetComponent<RacerProgress>();
+        if (racerProgress == null)
+        {
+            Debug.LogWarning("No RacerProgress component found on this vehicle!");
+        }
     }
 
     void FixedUpdate()
@@ -99,7 +113,11 @@ public class AIHovercarController : MonoBehaviour
         RaycastHit hit;
         Vector3 rayOrigin = transform.position;
 
-        if (Physics.Raycast(rayOrigin, -transform.up, out hit, raycastDistance, terrainLayer))
+        // Combine both terrain layers for the raycast.
+        LayerMask combinedLayer = smoothTerrainLayer | bumpyTerrainLayer;
+
+        // Cast a ray downward to detect the terrain.
+        if (Physics.Raycast(rayOrigin, -transform.up, out hit, raycastDistance, combinedLayer))
         {
             groundContact = true;
 
@@ -127,7 +145,14 @@ public class AIHovercarController : MonoBehaviour
                                          worldNormal2 * hit.barycentricCoordinate.y +
                                          worldNormal3 * hit.barycentricCoordinate.z;
             interpolatedNormal.Normalize();
+            // Choose the appropriate adjustment speed based on which terrain layer was hit.
+            float currentAdjustmentSpeed = smoothPositionAdjustmentSpeed;
+            if (IsInLayerMask(hit.collider.gameObject, bumpyTerrainLayer))
+            {
+                currentAdjustmentSpeed = bumpyPositionAdjustmentSpeed;
+            }
 
+            // Compute the target hover position.
             Vector3 targetPosition = interpolatedPoint + interpolatedNormal * hoverHeight;
             transform.position = Vector3.Lerp(transform.position, targetPosition, Time.fixedDeltaTime * positionAdjustmentSpeed);
 
@@ -234,6 +259,9 @@ public class AIHovercarController : MonoBehaviour
 
         // Apply movement: accelerate/decelerate toward the target speed, then update velocity and angular velocity.
         float targetSpeed = verticalInput * movementSpeed;
+        if (!canAccelerate) {
+            targetSpeed = 0;
+        }
         if (verticalInput != 0)
         {
             currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, Time.fixedDeltaTime * acceleration);
@@ -255,39 +283,34 @@ public class AIHovercarController : MonoBehaviour
     /// </summary>
     void ResetToCheckpoint()
     {
-        if (checkpoints == null || checkpoints.Length == 0)
-        {
-            Debug.LogWarning("No checkpoints assigned in the Inspector.");
-            return;
-        }
+    // Ensure checkpoints and progress tracking are valid.
+    if (checkpoints == null || checkpoints.Length == 0)
+    {
+        Debug.LogWarning("No checkpoints have been assigned in the Inspector.");
+        return;
+    }
+    if (racerProgress == null)
+    {
+        Debug.LogWarning("RacerProgress component is missing. Cannot reset to checkpoint.");
+        return;
+    }
+    
+    int cpIndex = racerProgress.currentCheckpointIndex;
+    if (cpIndex < 0 || cpIndex >= checkpoints.Length)
+    {
+        Debug.LogWarning("Invalid checkpoint index in RacerProgress!");
+        return;
+    }
 
-        // Determine the last checkpoint passed.
-        int lastCheckpointIndex = currentCheckpointIndex - 1;
-        if (lastCheckpointIndex < 0)
-        {
-            lastCheckpointIndex = checkpoints.Length - 1;
-        }
-        Transform lastCheckpoint = checkpoints[lastCheckpointIndex];
+    // Get the last checkpoint.
+    Transform lastCheckpoint = checkpoints[cpIndex];
 
-        // Find the nearest other checkpoint (to set the forward direction).
-        Transform nearestOther = null;
-        float nearestDistance = Mathf.Infinity;
-        foreach (Transform cp in checkpoints)
-        {
-            if (cp == lastCheckpoint)
-                continue;
-            float d = Vector3.Distance(lastCheckpoint.position, cp.position);
-            if (d < nearestDistance)
-            {
-                nearestDistance = d;
-                nearestOther = cp;
-            }
-        }
+    // Determine the next checkpoint in sequence.
+    int nextCheckpointIndex = (cpIndex + 1) % checkpoints.Length;
+    Transform nextCheckpoint = checkpoints[nextCheckpointIndex];
 
-        // Determine desired forward direction.
-        Vector3 desiredForward = (nearestOther != null)
-            ? (nearestOther.position - lastCheckpoint.position).normalized
-            : transform.forward;
+    // Determine desired forward direction toward the next checkpoint.
+    Vector3 desiredForward = (nextCheckpoint.position - lastCheckpoint.position).normalized;
 
         // Determine the track’s surface normal to align the vehicle’s bottom.
         // Raycast downward from a point just above the checkpoint.
@@ -312,11 +335,19 @@ public class AIHovercarController : MonoBehaviour
         transform.position = lastCheckpoint.position;
         transform.rotation = desiredRotation;
 
-        // Clear any existing motion.
+    // Clear any existing velocity.
+        currentSpeed = 0f;
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
         Debug.Log("AI reset to checkpoint: " + lastCheckpoint.name +
-                  (nearestOther != null ? " with front facing: " + nearestOther.name : ""));
+                  (nextCheckpoint != null ? " with front facing: " + nextCheckpoint.name : ""));
+    }
+
+
+    // Helper method to determine if a GameObject's layer is in a given LayerMask.
+    private bool IsInLayerMask(GameObject obj, LayerMask mask)
+    {
+        return ((mask.value & (1 << obj.layer)) != 0);
     }
 }

@@ -1,27 +1,49 @@
 using UnityEngine;
+using TMPro;
+using System.Collections;
 using System.Collections.Generic;
+using Unity.Cinemachine;
 
 public class RaceManager : MonoBehaviour
 {
     public static RaceManager Instance;
 
     [Header("Race Settings")]
-    [Tooltip("Total number of laps needed to finish the race.")]
     public int totalLaps = 3;
-    [Tooltip("Total number of checkpoints in the race.")]
-    public int numberOfCheckpoints = 0; // Set this in the Inspector to match your track setup
+    public int numberOfCheckpoints = 0;
+
+    [Header("Countdown Settings")]
+    public int preliminaryCounts = 3;
+    public float delayBetweenCounts = 1.0f;
+    public AudioSource countAudioSource;
+    public AudioSource startSignalAudioSource;
+    public TextMeshProUGUI countdownText;
 
     [Header("Finish Line Settings")]
-    [Tooltip("Assign the finish line object (with a trigger collider) here.")]
     public Transform finishLine;
+
+    [Header("UI Elements")]
+    public TextMeshProUGUI playerPositionText;
+    public TextMeshProUGUI lapsLeftText;
+    public GameObject playerVehicle;
+
+    [Header("Post-Race Settings")]
+    public CinemachineCamera victoryCamera;
+    public CinemachineCamera playerCamera;
+    public GameObject postRaceCanvas;
+    public TextMeshProUGUI victoryText;
+    public GameObject playerUI;
 
     private List<RacerProgress> racers = new List<RacerProgress>();
     public bool raceFinished = false;
+    public bool raceStarted = false;
     public string winnerName = "";
+
+    private RacerProgress playerProgress;
+    private string[] placeMapping = { "1st", "2nd", "3rd" };
 
     void Awake()
     {
-        // Basic singleton setup.
         if (Instance == null)
             Instance = this;
         else
@@ -30,35 +52,137 @@ public class RaceManager : MonoBehaviour
 
     void Start()
     {
-        // Optionally, automatically find all racers by tag.
         GameObject[] racerObjects = GameObject.FindGameObjectsWithTag("Racer");
         foreach (GameObject racer in racerObjects)
         {
             RacerProgress progress = racer.GetComponent<RacerProgress>();
             if (progress != null)
+            {
                 racers.Add(progress);
+            }
         }
-    }
 
-    /// <summary>
-    /// Returns the highest “progress value” among all racers.
-    /// (Calculated as: lap count * numberOfCheckpoints + current checkpoint index.)
-    /// </summary>
-    public float GetLeaderProgress()
-    {
-        float leaderProgress = 0f;
-        foreach (RacerProgress rp in racers)
+        if (playerVehicle != null) 
         {
-            float progressValue = rp.lapCount * numberOfCheckpoints + rp.currentCheckpointIndex;
-            if (progressValue > leaderProgress)
-                leaderProgress = progressValue;
+            playerProgress = playerVehicle.GetComponent<RacerProgress>();
         }
-        return leaderProgress;
+
+        if (postRaceCanvas != null)
+            postRaceCanvas.SetActive(false);
+
+        LockRacers();
+        StartCoroutine(RaceCountdown());
     }
 
-    /// <summary>
-    /// Call this when a racer crosses the finish line.
-    /// </summary>
+    void Update()
+    {
+        if (playerProgress != null && raceStarted && !raceFinished)
+        {
+            int playerPosition = GetPlayerPosition();
+            UpdatePositionUI(playerPosition);
+            UpdateLapsLeftUI();
+        }
+    }
+
+    private IEnumerator RaceCountdown()
+    {
+        if (countdownText != null) countdownText.gameObject.SetActive(true);
+
+        for (int i = preliminaryCounts; i > 0; i--)
+        {
+            if (countAudioSource != null) countAudioSource.Play();
+            if (countdownText != null) countdownText.text = i.ToString();
+            yield return new WaitForSeconds(delayBetweenCounts);
+        }
+
+        if (startSignalAudioSource != null) startSignalAudioSource.Play();
+        if (countdownText != null) countdownText.text = "GO!";
+        
+        yield return new WaitForSeconds(1f);  // Display "GO!" briefly
+        if (countdownText != null) countdownText.gameObject.SetActive(false);
+
+        UnlockRacers();
+        raceStarted = true;
+    }
+
+    private void LockRacers()
+    {
+        foreach (RacerProgress racer in racers)
+        {
+            BaseHovercarController controller = racer.GetComponent<BaseHovercarController>();
+            if (controller != null)
+            {
+                controller.enabled = false; // Disable the movement script.
+            }
+
+            Rigidbody rb = racer.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.constraints = RigidbodyConstraints.FreezePosition | RigidbodyConstraints.FreezeRotation;
+            }
+        }
+    }
+
+    private void UnlockRacers()
+    {
+        foreach (RacerProgress racer in racers)
+        {
+            BaseHovercarController controller = racer.GetComponent<BaseHovercarController>();
+            if (controller != null)
+            {
+                controller.enabled = true; // Disable the movement script.
+            }
+
+            racer.GetComponent<BaseHovercarController>().canAccelerate = true;
+            Rigidbody rb = racer.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.constraints = RigidbodyConstraints.None;
+            }
+        }
+    }
+
+    private int GetPlayerPosition()
+    {
+        racers.Sort((r1, r2) => GetRacerProgressValue(r2).CompareTo(GetRacerProgressValue(r1)));
+        for (int i = 0; i < racers.Count; i++)
+        {
+            if (racers[i] == playerProgress)
+                return i + 1;
+        }
+        return racers.Count;
+    }
+
+    private void UpdatePositionUI(int position)
+    {
+        playerPositionText.text = GetPrettyPosition(position);
+    }
+
+    private string GetPrettyPosition(int position)
+    {
+        if (position < 4) 
+        {
+            return placeMapping[position - 1];
+        } 
+        else 
+        {
+            return position + "th";
+        }
+    }
+
+    private void UpdateLapsLeftUI()
+    {
+        int lapsLeft = Mathf.Max(totalLaps - playerProgress.lapCount, 0);
+        lapsLeftText.text = "Laps Left: " + lapsLeft;
+    }
+
+    private float GetRacerProgressValue(RacerProgress rp)
+    {
+        return rp.lapCount * numberOfCheckpoints + rp.currentCheckpointIndex;
+    }
+
     public void CheckFinish(RacerProgress rp)
     {
         if (rp.lapCount >= totalLaps && !raceFinished)
@@ -66,7 +190,31 @@ public class RaceManager : MonoBehaviour
             raceFinished = true;
             winnerName = rp.gameObject.name;
             Debug.Log("Race Finished! Winner: " + winnerName);
-            // Here you might trigger UI updates, stop all racers, etc.
+            TriggerPostRaceEvents();
         }
+    }
+
+    private void TriggerPostRaceEvents()
+    {
+        LockRacers();
+        if (victoryCamera != null && playerVehicle != null && playerCamera != null)
+        {
+            victoryCamera.gameObject.SetActive(true);
+            playerCamera.gameObject.SetActive(false);
+        }
+
+        if (postRaceCanvas != null) 
+        {
+            int playerPosition = GetPlayerPosition();
+            postRaceCanvas.SetActive(true);
+            if (playerPosition == 1) {
+                victoryText.text = "You win";
+            }
+            else 
+            {
+                victoryText.text = "you placed " + GetPrettyPosition(playerPosition);
+            }
+        }
+        if (playerUI != null) playerUI.SetActive(false);
     }
 }
