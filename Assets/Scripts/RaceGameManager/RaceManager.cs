@@ -15,6 +15,7 @@ public class RaceManager : MonoBehaviour
     [Header("Countdown Settings")]
     public int preliminaryCounts = 3;
     public float delayBetweenCounts = 1.0f;
+    public AudioSource songAudioSource;
     public AudioSource countAudioSource;
     public AudioSource startSignalAudioSource;
     public TextMeshProUGUI countdownText;
@@ -103,6 +104,7 @@ public class RaceManager : MonoBehaviour
 
         UnlockRacers();
         raceStarted = true;
+        songAudioSource.Play();
     }
 
     private void LockRacers()
