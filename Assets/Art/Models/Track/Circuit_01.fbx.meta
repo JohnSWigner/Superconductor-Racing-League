@@ -12,6 +12,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: MAT_TowerSign_Circuit_01
+    second: {fileID: 2100000, guid: 0190f5dca43995a46b65b665427926bf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: MAT_Tower_Circuit_01
     second: {fileID: 2100000, guid: 4ac9cde72e829664eb86ccb42984ad9c, type: 2}
   - first:
