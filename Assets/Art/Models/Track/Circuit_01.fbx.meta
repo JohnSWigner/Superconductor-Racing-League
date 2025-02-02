@@ -7,8 +7,38 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: MAT_Startline_01
+    second: {fileID: 2100000, guid: 54e93ed455e67d84088d49c570cd6a2c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Tower_Circuit_01
+    second: {fileID: 2100000, guid: 4ac9cde72e829664eb86ccb42984ad9c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: MAT_Track_Circuit_01
     second: {fileID: 2100000, guid: 7c3461cc9c2347341b348b22ce1f7ad6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Track_GlassTube01
+    second: {fileID: 2100000, guid: 1f89ffcc3b605174a84d5bc8e6421769, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Track_Tube_Details01
+    second: {fileID: 2100000, guid: 788751327f0e4a049b430948e2c97f6a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_TubeSupport
+    second: {fileID: 2100000, guid: 39941d5045749f64eb1251c84868a6e6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material
+    second: {fileID: 2100000, guid: 4907403106bc00444b47cc1a726bc519, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
