@@ -20,6 +20,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/FluxSpeedway.unity
     guid: 2d37784a55016c04d9f9edb7da18efa4
+  - enabled: 1
+    path: Assets/Scenes/SiliconeCircuit.unity
+    guid: eb4f91a575c7c8f489faf6c97f31ec56
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
