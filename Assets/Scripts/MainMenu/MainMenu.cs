@@ -4,12 +4,21 @@ using UnityEngine.SceneManagement;
 public class MainMenu : MonoBehaviour
 {
     [Tooltip("The name of the scene that is loaded when Start button is pressed")]
-    public string scene_to_load = "SampleScene";
+    public string level1 = "FluxSpeedway";
+    public string level2 = "SiliconeCircuit";
+
+    public GameObject levelSelectPanel;
 
     // Called when the Start button is clicked
     public void StartGame()
     {
-        SceneManager.LoadScene(scene_to_load);
+        // Show the controls UI or panel (handled in the next step)
+        levelSelectPanel.SetActive(true);
+    }
+
+    public void HideLevelSelect()
+    {
+        levelSelectPanel.SetActive(false);
     }
 
     // Called when the Quit button is clicked
@@ -34,5 +43,22 @@ public class MainMenu : MonoBehaviour
     public void HideControls()
     {
         controlsPanel.SetActive(false);
+    }
+
+
+    /// <summary>
+    /// Loads the scene named "Level1". Make sure the scene is added to your Build Settings.
+    /// </summary>
+    public void LoadLevel1()
+    {
+        SceneManager.LoadScene(level1);
+    }
+
+    /// <summary>
+    /// Loads the scene named "Level2". Make sure the scene is added to your Build Settings.
+    /// </summary>
+    public void LoadLevel2()
+    {
+        SceneManager.LoadScene(level2);
     }
 }
